@@ -25,6 +25,6 @@ def test_boucle_outil_puis_reponse():
     reponse = AgentDevis(client).repondre("120 m² de façade au 3 rue des Lilas, le 15 novembre")
 
     assert reponse == "Votre devis : 4 370 €"
-    resultat = client.appels[1]["messages"][-1]["content"][0]
+    resultat = client.appels[1]["messages"][-2]["content"][0]
     assert resultat["type"] == "tool_result" and not resultat["is_error"]
     assert json.loads(resultat["content"])["total_ttc"] == "4370.00"
