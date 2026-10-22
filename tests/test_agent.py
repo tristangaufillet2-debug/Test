@@ -28,3 +28,11 @@ def test_boucle_outil_puis_reponse():
     resultat = client.appels[1]["messages"][-2]["content"][0]
     assert resultat["type"] == "tool_result" and not resultat["is_error"]
     assert json.loads(resultat["content"])["total_ttc"] == "4370.00"
+
+
+def test_date_du_jour_transmise_a_l_agent():
+    from datetime import date
+
+    client = FakeClient()
+    AgentDevis(client, aujourd_hui=date(2026, 10, 22)).repondre("Bonjour")
+    assert client.appels[0]["system"][1]["text"] == "Date du jour : 22/10/2026."

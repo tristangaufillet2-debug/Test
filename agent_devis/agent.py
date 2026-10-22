@@ -4,6 +4,7 @@ Lancement :  python -m agent_devis.agent
 """
 
 import json
+from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
@@ -25,7 +26,7 @@ Ta mission :
 3. Quand tu as tout, appelle l'outil `calculer_devis`. Ne calcule JAMAIS les prix toi-même :
    utilise uniquement les montants renvoyés par l'outil.
    Mets `urgence` à true seulement si l'intervention doit avoir lieu dans les 48 heures
-   (compare la date souhaitée à la date du jour donnée par le client ou le contexte ; en cas de doute, demande).
+   (compare la date souhaitée à la date du jour indiquée plus bas ; en cas de doute, demande).
 4. Présente le devis : détail des prestations, remise éventuelle, supplément urgence éventuel,
    forfait déplacement, total, acompte de 30 % à la signature, validité de 30 jours, adresse et date.
    Termine en proposant au client de valider le devis ou de poser ses questions.
@@ -93,9 +94,11 @@ def executer_outil(entree: dict) -> tuple[str, bool]:
 class AgentDevis:
     """Conversation avec un client. Une instance par client / fil de discussion."""
 
-    def __init__(self, client: anthropic.Anthropic | None = None):
+    def __init__(self, client: anthropic.Anthropic | None = None, aujourd_hui: date | None = None):
         self.client = client or anthropic.Anthropic()
         self.messages: list[dict] = []
+        jour = aujourd_hui or date.today()
+        self.contexte_date = f"Date du jour : {jour.strftime('%d/%m/%Y')}."
 
     def repondre(self, message_client: str) -> str:
         self.messages.append({"role": "user", "content": message_client})
@@ -104,7 +107,10 @@ class AgentDevis:
             response = self.client.beta.messages.create(
                 model=MODEL,
                 max_tokens=16000,
-                system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
+                system=[
+                    {"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}},
+                    {"type": "text", "text": self.contexte_date},
+                ],
                 tools=[OUTIL_DEVIS],
                 messages=self.messages,
                 thinking={"type": "adaptive"},
